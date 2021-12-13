@@ -1,0 +1,14 @@
+{application, emqx_plugrel,
+ [{description, "A rebar plugin to help relese EMQ X plugins package"},
+  {vsn, "0.1.0"},
+  {registered, []},
+  {applications,
+   [kernel,
+    stdlib
+   ]},
+  {env,[]},
+  {modules, []},
+
+  {licenses, ["Apache 2.0"]},
+  {links, []}
+ ]}.
