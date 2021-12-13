@@ -49,7 +49,7 @@ collect_info(PluginInfo, Name, Version, Apps, State) ->
     maps:merge(Info, MoreInfo).
 
 git_ref() ->
-    case rebar_utils:sh("gitx rev-parse HEAD", [{use_stdout, false}, return_on_error]) of
+    case rebar_utils:sh("git rev-parse HEAD", [{use_stdout, false}, return_on_error]) of
         {ok, Ref} ->
             bin(rebar_string:trim(Ref, trailing, "\n"));
         {error, {Rc, Output}} ->
