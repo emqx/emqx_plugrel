@@ -27,7 +27,7 @@ do(State) ->
     case lists:keyfind(release, 1, Relx) of
         {release, {Name, Version}, Apps} ->
             Info = collect_info(PluginInfo, Name, Version, Apps, State),
-            ok = make_tar(Info);
+            ok = make_tar(Info, State);
         false ->
             ?LOG(error, "relx_config_not_found", []),
             error(relx_config_not_found)
@@ -55,9 +55,10 @@ now_time() ->
 %% such info is technically available from within rebar State,
 %% however that requires some deep knowledge of rebar3 internals
 %% Returns a list of app names with -<vsn> suffix in binary() string format.
-resolve_vsn(App, _State) ->
+resolve_vsn(App, State) ->
+    BaseDir = rebar_dir:base_dir(State),
     AppStr = atom_to_list(App),
-    AppFile = filename:join(["_build", "default", "lib", App, "ebin", bin([AppStr, ".app"])]),
+    AppFile = filename:join([BaseDir, "lib", App, "ebin", bin([AppStr, ".app"])]),
     case file:consult(AppFile) of
         {ok, AppInfo} ->
             bin(AppStr ++ "-" ++ get_vsn(AppInfo));
@@ -70,8 +71,9 @@ get_vsn([{application, _Name, Info}]) ->
     {vsn, Vsn} = lists:keyfind(vsn, 1, Info),
     Vsn.
 
-make_tar(#{name := Name, rel_vsn := Vsn, rel_apps := Apps} = Info) ->
-    Dir = filename:join(["_build", ?MODULE]),
+make_tar(#{name := Name, rel_vsn := Vsn, rel_apps := Apps} = Info, State) ->
+    BaseDir = rebar_dir:base_dir(State),
+    Dir = filename:join([BaseDir, ?MODULE]),
     NameWithVsn = binary_to_list(bin([Name, "-", Vsn])),
     %% write info file
     InfoFile = filename:join([Dir, NameWithVsn ++ ".json"]),
@@ -81,7 +83,7 @@ make_tar(#{name := Name, rel_vsn := Vsn, rel_apps := Apps} = Info) ->
     LibDir = filename:join([Dir, lib]),
     ok = rebar_file_utils:rm_rf(LibDir),
     ok = filelib:ensure_dir(filename:join([LibDir, "foo"])),
-    Sources = lists:map(fun(App) -> filename:join(["_build", "default", "rel", Name, "lib", App]) end, Apps),
+    Sources = lists:map(fun(App) -> filename:join([BaseDir, "rel", Name, "lib", App]) end, Apps),
     ok = rebar_file_utils:cp_r(Sources, LibDir),
     {ok, OriginalCwd} = file:get_cwd(),
     ok = file:set_cwd(Dir),
@@ -90,7 +92,8 @@ make_tar(#{name := Name, rel_vsn := Vsn, rel_apps := Apps} = Info) ->
     after
         file:set_cwd(OriginalCwd)
     end,
-    ok = file:delete(InfoFile).
+    ok = file:delete(InfoFile),
+    ok = rebar_file_utils:rm_rf(LibDir).
 
 do_make_tar(Cwd, NameWithVsn) ->
     Files = filelib:wildcard("lib/**"),
