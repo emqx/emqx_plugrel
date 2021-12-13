@@ -44,12 +44,18 @@ collect_info(PluginInfo, Name, Version, Apps, State) ->
     MoreInfo = #{ name => bin(atom_to_list(Name))
                 , rel_vsn => bin(Version)
                 , rel_apps => AppsWithVsn
-                , build_time => now_time()
+                , git_ref => git_ref()
                 },
     maps:merge(Info, MoreInfo).
 
-now_time() ->
-    bin(calendar:system_time_to_rfc3339(erlang:system_time(second))).
+git_ref() ->
+    case rebar_utils:sh("gitx rev-parse HEAD", [{use_stdout, false}, return_on_error]) of
+        {ok, Ref} ->
+            bin(rebar_string:trim(Ref, trailing, "\n"));
+        {error, {Rc, Output}} ->
+            ?LOG(debug, "failed_to_get_git_ref ~p:~n~ts~n", [Rc, Output]),
+            <<"unknown">>
+    end.
 
 %% Find app vsn from compiled .app files
 %% such info is technically available from within rebar State,
@@ -63,7 +69,7 @@ resolve_vsn(App, State) ->
         {ok, AppInfo} ->
             bin(AppStr ++ "-" ++ get_vsn(AppInfo));
         {error, Reason} ->
-            ?LOG(error, "failed_to_read_app_vsn ~s ~p", [AppFile, Reason]),
+            ?LOG(error, "failed_to_read_app_vsn ~ts: ~p", [AppFile, Reason]),
             error({failed_to_read_app_vsn, AppFile, Reason})
     end.
 
@@ -99,7 +105,7 @@ do_make_tar(Cwd, NameWithVsn) ->
     Files = filelib:wildcard("lib/**"),
     TarFile = NameWithVsn ++ ".tar.gz",
     FullName = filename:join([Cwd, TarFile]),
-    ?LOG(info, "creating ~s", [FullName]),
+    ?LOG(info, "creating ~ts", [FullName]),
     ok = erl_tar:create(TarFile, [NameWithVsn ++ ".json"| Files], [compressed]),
     {ok, Bin} = file:read_file(TarFile),
     Sha = bin2hexstr(crypto:hash(sha256, Bin)),
