@@ -10,20 +10,20 @@ A rebar plugin to help create EMQ X plugin release package (.tar.gz)
 
 Add the plugin to your rebar.config:
 
-```
-
+```erlang
 %% Make use of this plugin
 {plugins, [
     {emqx_plugrel, {git, "https://github.com/emqx/emqx_plugrel.git", {tag, "0.1.0"}}}
 ]}.
 
 %% Add relx config to build a release for this plugin to work on
-{relx, [ {release, {emqx_plugin_template, "0.1.0"}, %% this is the release version, different from app vsn in .app file
-            [ emqx_plugin_template
+%% Version "0.1.0" in this example is the release version
+%% which is different from the application version (vsn in .app file)
+{relx, [ {release, {emqx_plugin_template, "0.1.0"}, 
+            [ emqx_plugin_template %% list the applications to be released
             , map_sets
             ]}
-       , {dev_mode, false}
-       , {include_erts, false}
+       , {include_erts, false} % no need to include erts
        ]}.
 
 %% Additional information to describe more details about the plugin.
