@@ -2,6 +2,8 @@
 
 -export([init/1, do/1, format_error/1]).
 
+-define(METADATA_VSN, <<"0.1.0">>).
+
 -define(LOG(LEVEL, FORMAT, ARGS),
         rebar_api:LEVEL("[emqx_plugrel] " ++ FORMAT, ARGS)).
 
@@ -45,6 +47,7 @@ collect_info(PluginInfo, Name, Version, Apps, State) ->
                 , rel_vsn => bin(Version)
                 , rel_apps => AppsWithVsn
                 , git_ref => git_ref()
+                , metadata_vsn => ?METADATA_VSN
                 },
     maps:merge(Info, MoreInfo).
 
@@ -81,14 +84,14 @@ make_tar(#{name := Name, rel_vsn := Vsn, rel_apps := Apps} = Info, State) ->
     BaseDir = rebar_dir:base_dir(State),
     Dir = filename:join([BaseDir, ?MODULE]),
     NameWithVsn = binary_to_list(bin([Name, "-", Vsn])),
-    %% write info file
-    InfoFile = filename:join([Dir, NameWithVsn ++ ".json"]),
+    LibDir = filename:join([Dir, NameWithVsn]),
+    InfoFile = filename:join([LibDir, "release" ++ ".json"]),
+    %% ensure clean state
+    ok = rebar_file_utils:rm_rf(LibDir),
     ok = filelib:ensure_dir(InfoFile),
+    %% write info file
     ok = file:write_file(InfoFile, jsx:encode(Info, [space, {indent, 4}])),
     %% copy apps to lib dir
-    LibDir = filename:join([Dir, lib]),
-    ok = rebar_file_utils:rm_rf(LibDir),
-    ok = filelib:ensure_dir(filename:join([LibDir, "foo"])),
     Sources = lists:map(fun(App) -> filename:join([BaseDir, "rel", Name, "lib", App]) end, Apps),
     ok = rebar_file_utils:cp_r(Sources, LibDir),
     {ok, OriginalCwd} = file:get_cwd(),
@@ -97,16 +100,14 @@ make_tar(#{name := Name, rel_vsn := Vsn, rel_apps := Apps} = Info, State) ->
         do_make_tar(Dir, NameWithVsn)
     after
         file:set_cwd(OriginalCwd)
-    end,
-    ok = file:delete(InfoFile),
-    ok = rebar_file_utils:rm_rf(LibDir).
+    end.
 
 do_make_tar(Cwd, NameWithVsn) ->
-    Files = filelib:wildcard("lib/**"),
+    Files = filelib:wildcard(NameWithVsn ++ "/**"),
     TarFile = NameWithVsn ++ ".tar.gz",
     FullName = filename:join([Cwd, TarFile]),
     ?LOG(info, "creating ~ts", [FullName]),
-    ok = erl_tar:create(TarFile, [NameWithVsn ++ ".json"| Files], [compressed]),
+    ok = erl_tar:create(TarFile, Files, [compressed]),
     {ok, Bin} = file:read_file(TarFile),
     Sha = bin2hexstr(crypto:hash(sha256, Bin)),
     ok = file:write_file(NameWithVsn ++ ".sha256", Sha).
