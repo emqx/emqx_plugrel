@@ -2,6 +2,8 @@
 
 -export([init/1, do/1, format_error/1]).
 
+-define(METADATA_VSN, <<"0.1.0">>).
+
 -define(LOG(LEVEL, FORMAT, ARGS),
         rebar_api:LEVEL("[emqx_plugrel] " ++ FORMAT, ARGS)).
 
@@ -45,6 +47,7 @@ collect_info(PluginInfo, Name, Version, Apps, State) ->
                 , rel_vsn => bin(Version)
                 , rel_apps => AppsWithVsn
                 , git_ref => git_ref()
+                , metadata_vsn => ?METADATA_VSN
                 },
     maps:merge(Info, MoreInfo).
 
