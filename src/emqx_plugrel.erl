@@ -48,6 +48,7 @@ collect_info(PluginInfo, Name, Version, Apps, State) ->
                 , rel_apps => AppsWithVsn
                 , git_ref => git_ref()
                 , metadata_vsn => ?METADATA_VSN
+                , built_on_otp_release => bin(erlang:system_info(otp_release))
                 },
     maps:merge(Info, MoreInfo).
 
@@ -89,6 +90,11 @@ make_tar(#{name := Name, rel_vsn := Vsn, rel_apps := Apps} = Info, State) ->
     %% ensure clean state
     ok = rebar_file_utils:rm_rf(LibDir),
     ok = filelib:ensure_dir(InfoFile),
+    %% copy README.md if present
+    case file:read_file_info("README.md") of
+        {ok, _} -> rebar_file_utils:cp_r(["README.md"], LibDir);
+        _ -> ok
+    end,
     %% write info file
     ok = file:write_file(InfoFile, jsx:encode(Info, [space, {indent, 4}])),
     %% copy apps to lib dir
