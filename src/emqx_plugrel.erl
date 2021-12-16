@@ -47,17 +47,36 @@ collect_info(PluginInfo, Name, Version, Apps, State) ->
                 , rel_vsn => bin(Version)
                 , rel_apps => AppsWithVsn
                 , git_ref => git_ref()
+                , date => get_date()
                 , metadata_vsn => ?METADATA_VSN
+                , built_on_otp_release => bin(erlang:system_info(otp_release))
                 },
     maps:merge(Info, MoreInfo).
 
+%% best-effort deterministic time, read git commit time otherwise now
+get_date() ->
+    case cmd_oneline_output("git log -1 --pretty=format:'%cd' --date=format:'%Y-%m-%d'") of
+        error -> today();
+        Date -> Date
+    end.
+
+today() ->
+    {Y, M, D} = erlang:date(),
+    bin(io_lib:format("~4..0b-~2..0b-~2..0b", [Y, M, D])).
+
 git_ref() ->
-    case rebar_utils:sh("git rev-parse HEAD", [{use_stdout, false}, return_on_error]) of
-        {ok, Ref} ->
-            bin(rebar_string:trim(Ref, trailing, "\n"));
+    case cmd_oneline_output("git rev-parse HEAD") of
+        error -> <<"unknown">>;
+        Ref -> Ref
+    end.
+
+cmd_oneline_output(Cmd) ->
+    case rebar_utils:sh(Cmd, [{use_stdout, false}, return_on_error]) of
+        {ok, Line} ->
+            bin(rebar_string:trim(Line, trailing, "\n"));
         {error, {Rc, Output}} ->
-            ?LOG(debug, "failed_to_get_git_ref ~p:~n~ts~n", [Rc, Output]),
-            <<"unknown">>
+            ?LOG(debug, "failed_run_cmd ~s~n, error=~p~noutput:~n~ts~n", [Rc, Output]),
+            error
     end.
 
 %% Find app vsn from compiled .app files
@@ -89,6 +108,11 @@ make_tar(#{name := Name, rel_vsn := Vsn, rel_apps := Apps} = Info, State) ->
     %% ensure clean state
     ok = rebar_file_utils:rm_rf(LibDir),
     ok = filelib:ensure_dir(InfoFile),
+    %% copy README.md if present
+    case file:read_file_info("README.md") of
+        {ok, _} -> rebar_file_utils:cp_r(["README.md"], LibDir);
+        _ -> ok
+    end,
     %% write info file
     ok = file:write_file(InfoFile, jsx:encode(Info, [space, {indent, 4}])),
     %% copy apps to lib dir
@@ -130,3 +154,10 @@ bin2hexstr(B) when is_binary(B) ->
 
 int2hexchar(I) when I >= 0 andalso I < 10 -> I + $0;
 int2hexchar(I) -> I - 10 + $a.
+
+-ifdef(TEST).
+-include_lib("eunit/include/eunit.hrl").
+date_test() ->
+    ?assertMatch([$2, $0, _, _, $-, _, _, $-, _, _], binary_to_list(today())),
+    ?assertMatch([$2, $0, _, _, $-, _, _, $-, _, _], binary_to_list(get_date())).
+-endif.
