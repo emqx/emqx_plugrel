@@ -47,7 +47,7 @@ collect_info(PluginInfo, Name, Version, Apps, State) ->
                 , rel_vsn => bin(Version)
                 , rel_apps => AppsWithVsn
                 , git_ref => git_ref()
-                , date => get_date()
+                , git_commit_or_build_date => get_date()
                 , metadata_vsn => ?METADATA_VSN
                 , built_on_otp_release => bin(erlang:system_info(otp_release))
                 },
