@@ -17,8 +17,8 @@ init(State) ->
             {deps, [{default, release}]},  % The list of dependencies
             {example, "rebar3 emqx_plugrel tar"}, % How to use the plugin
             {opts, [emqx_plugrel]}, % list of options understood by the plugin
-            {short_desc, "EMQ X plugin zip package"},
-            {desc, "A rebar3 plugin that helps to release a zip package for EMQ X plugin"}
+            {short_desc, "EMQX plugin zip package"},
+            {desc, "A rebar3 plugin that helps to release a zip package for EMQX plugin"}
     ]),
     {ok, rebar_state:add_provider(State, Provider)}.
 

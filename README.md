@@ -1,6 +1,6 @@
 # emqx_plugrel
 
-A rebar plugin to help create EMQ X plugin release package (.tar.gz)
+A rebar plugin to help create EMQX plugin release package (.tar.gz)
 
 ## Build
 
@@ -29,9 +29,9 @@ Add the plugin to your rebar.config:
 %% Additional information to describe more details about the plugin.
 %% This part will be generated to a JSON file in the release package.
 {emqx_plugrel,
-    [ {authors, ["EMQ X Team"]}
+    [ {authors, ["EMQX Team"]}
     , {builder,
-        [ {name, "EMQ X Team"}
+        [ {name, "EMQX Team"}
         , {contact, "emqx-support@emqx.io"}
         , {website, "www.emqx.com"}
         ]}

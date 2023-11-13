@@ -1,5 +1,5 @@
 {application, emqx_plugrel,
- [{description, "A rebar plugin to help relese EMQ X plugins package"},
+ [{description, "A rebar plugin to help relese EMQX plugins package"},
   {vsn, "0.1.0"},
   {registered, []},
   {applications,
