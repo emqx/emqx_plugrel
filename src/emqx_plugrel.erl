@@ -25,12 +25,17 @@ init(State) ->
 do(State) ->
     Opts = rebar_state:opts(State),
     Relx = rebar_opts:get(Opts, relx),
-    PluginInfo = rebar_opts:get(Opts, emqx_plugrel),
-    case lists:keyfind(release, 1, Relx) of
-        {release, {Name, Version}, Apps} ->
+    %% call rlx_config:to_state/1 to parse the vsns in format of 'git' or '{cmd, Cmd}'
+    {ok, RelxState} = rlx_config:to_state(Relx),
+    case maps:values(rlx_state:configured_releases(RelxState)) of
+        [Rel] ->
+            Name = rlx_release:name(Rel),
+            Version = rlx_release:vsn(Rel),
+            Apps = [App || {App, _} <- rlx_release:app_specs(Rel)],
+            PluginInfo = rebar_opts:get(Opts, emqx_plugrel),
             Info = collect_info(PluginInfo, Name, Version, Apps, State),
             ok = make_tar(Info, State);
-        false ->
+        [] ->
             ?LOG(error, "relx_config_not_found", []),
             error(relx_config_not_found)
     end,
