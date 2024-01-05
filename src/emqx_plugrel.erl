@@ -80,7 +80,7 @@ cmd_oneline_output(Cmd) ->
         {ok, Line} ->
             bin(rebar_string:trim(Line, trailing, "\n"));
         {error, {Rc, Output}} ->
-            ?LOG(debug, "failed_run_cmd ~s~n, error=~p~noutput:~n~ts~n", [Rc, Output]),
+            ?LOG(debug, "failed_run_cmd ~s~n, error=~p~noutput:~n~ts~n", [Cmd, Rc, Output]),
             error
     end.
 
