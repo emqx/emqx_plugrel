@@ -5,20 +5,20 @@
 -define(METADATA_VSN, <<"0.1.0">>).
 
 -define(LOG(LEVEL, FORMAT, ARGS),
-        rebar_api:LEVEL("[emqx_plugrel] " ++ FORMAT, ARGS)).
+    rebar_api:LEVEL("[emqx_plugrel] " ++ FORMAT, ARGS)).
 
 -spec init(rebar_state:t()) -> {ok, rebar_state:t()}.
 init(State) ->
     Provider = providers:create([
-            {namespace, emqx_plugrel},
-            {name, tar}, % The 'user friendly' name of the task
-            {module, ?MODULE}, % The module implementation of the task
-            {bare, true}, % The task can be run by the user, always true
-            {deps, [{default, release}]},  % The list of dependencies
-            {example, "rebar3 emqx_plugrel tar"}, % How to use the plugin
-            {opts, [emqx_plugrel]}, % list of options understood by the plugin
-            {short_desc, "EMQX plugin zip package"},
-            {desc, "A rebar3 plugin that helps to release a zip package for EMQX plugin"}
+        {namespace, emqx_plugrel},
+        {name, tar}, % The 'user friendly' name of the task
+        {module, ?MODULE}, % The module implementation of the task
+        {bare, true}, % The task can be run by the user, always true
+        {deps, [{default, release}]},  % The list of dependencies
+        {example, "rebar3 emqx_plugrel tar"}, % How to use the plugin
+        {opts, [emqx_plugrel]}, % list of options understood by the plugin
+        {short_desc, "EMQX plugin zip package"},
+        {desc, "A rebar3 plugin that helps to release a zip package for EMQX plugin"}
     ]),
     {ok, rebar_state:add_provider(State, Provider)}.
 
@@ -31,7 +31,7 @@ do(State) ->
         [Rel] ->
             Name = rlx_release:name(Rel),
             Version = rlx_release:vsn(Rel),
-            Apps = [App || {App, _} <- rlx_release:app_specs(Rel)],
+            Apps = [App || {App, _} <- rlx_release:goals(Rel)],
             PluginInfo = rebar_opts:get(Opts, emqx_plugrel),
             Info = collect_info(PluginInfo, Name, Version, Apps, State),
             ok = make_tar(Info, State);
@@ -41,21 +41,21 @@ do(State) ->
     end,
     {ok, State}.
 
--spec format_error(any()) ->  iolist().
+-spec format_error(any()) -> iolist().
 format_error(Reason) ->
     io_lib:format("~p", [Reason]).
 
 collect_info(PluginInfo, Name, Version, Apps, State) ->
     AppsWithVsn = lists:map(fun(App) -> resolve_vsn(App, State) end, Apps),
     Info = info_map(PluginInfo),
-    MoreInfo = #{ name => bin(atom_to_list(Name))
-                , rel_vsn => bin(Version)
-                , rel_apps => AppsWithVsn
-                , git_ref => git_ref()
-                , git_commit_or_build_date => get_date()
-                , metadata_vsn => ?METADATA_VSN
-                , built_on_otp_release => bin(erlang:system_info(otp_release))
-                },
+    MoreInfo = #{name => bin(atom_to_list(Name))
+        , rel_vsn => bin(Version)
+        , rel_apps => AppsWithVsn
+        , git_ref => git_ref()
+        , git_commit_or_build_date => get_date()
+        , metadata_vsn => ?METADATA_VSN
+        , built_on_otp_release => bin(erlang:system_info(otp_release))
+    },
     maps:merge(Info, MoreInfo).
 
 %% best-effort deterministic time, read git commit time otherwise now
@@ -155,7 +155,7 @@ info_map(InfoList) ->
     maps:from_list(lists:map(fun({K, V}) -> {K, info_field(K, V)} end, InfoList)).
 
 bin2hexstr(B) when is_binary(B) ->
-    << <<(int2hexchar(H)), (int2hexchar(L))>> || <<H:4, L:4>> <= B>>.
+    <<<<(int2hexchar(H)), (int2hexchar(L))>> || <<H:4, L:4>> <= B>>.
 
 int2hexchar(I) when I >= 0 andalso I < 10 -> I + $0;
 int2hexchar(I) -> I - 10 + $a.
