@@ -31,7 +31,7 @@ do(State) ->
         [Rel] ->
             Name = rlx_release:name(Rel),
             Version = rlx_release:vsn(Rel),
-            Apps = [App || {App, _} <- rlx_release:app_specs(Rel)],
+            Apps = [App || {App, _} <- rlx_release:goals(Rel)],
             PluginInfo = rebar_opts:get(Opts, emqx_plugrel),
             Info = collect_info(PluginInfo, Name, Version, Apps, State),
             ok = make_tar(Info, State);
@@ -80,7 +80,7 @@ cmd_oneline_output(Cmd) ->
         {ok, Line} ->
             bin(rebar_string:trim(Line, trailing, "\n"));
         {error, {Rc, Output}} ->
-            ?LOG(debug, "failed_run_cmd ~s~n, error=~p~noutput:~n~ts~n", [Rc, Output]),
+            ?LOG(debug, "failed_run_cmd ~s~n, error=~p~noutput:~n~ts~n", [Cmd, Rc, Output]),
             error
     end.
 
