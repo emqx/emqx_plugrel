@@ -109,7 +109,7 @@ make_tar(#{name := Name, rel_vsn := Vsn, rel_apps := Apps} = Info, State) ->
     Dir = filename:join([BaseDir, ?MODULE]),
     NameWithVsn = binary_to_list(bin([Name, "-", Vsn])),
     LibDir = filename:join([Dir, NameWithVsn]),
-    InfoFile = filename:join([LibDir, "release" ++ ".json"]),
+    InfoFile = filename:join([LibDir, "release.json"]),
     %% ensure clean state
     ok = rebar_file_utils:rm_rf(LibDir),
     ok = filelib:ensure_dir(InfoFile),
