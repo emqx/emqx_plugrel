@@ -4,6 +4,10 @@
 
 -define(METADATA_VSN, <<"0.1.0">>).
 
+-define(plugin_readme_file, "README.md").
+-define(plugin_avsc_file, "priv/config_schema.avsc").
+-define(plugin_i18n_file, "priv/config_i18n.json").
+
 -define(LOG(LEVEL, FORMAT, ARGS),
         rebar_api:LEVEL("[emqx_plugrel] " ++ FORMAT, ARGS)).
 
@@ -55,6 +59,7 @@ collect_info(PluginInfo, Name, Version, Apps, State) ->
                 , git_commit_or_build_date => get_date()
                 , metadata_vsn => ?METADATA_VSN
                 , built_on_otp_release => bin(erlang:system_info(otp_release))
+                , with_config_schema => filelib:is_regular(?plugin_avsc_file)
                 },
     maps:merge(Info, MoreInfo).
 
@@ -105,6 +110,7 @@ get_vsn([{application, _Name, Info}]) ->
     Vsn.
 
 make_tar(#{name := Name, rel_vsn := Vsn, rel_apps := Apps} = Info, State) ->
+    ?LOG(info, "Pre-processing to create tarball for ~ts-~ts", [Name, Vsn]),
     BaseDir = rebar_dir:base_dir(State),
     Dir = filename:join([BaseDir, ?MODULE]),
     NameWithVsn = binary_to_list(bin([Name, "-", Vsn])),
@@ -113,11 +119,7 @@ make_tar(#{name := Name, rel_vsn := Vsn, rel_apps := Apps} = Info, State) ->
     %% ensure clean state
     ok = rebar_file_utils:rm_rf(LibDir),
     ok = filelib:ensure_dir(InfoFile),
-    %% copy README.md if present
-    case file:read_file_info("README.md") of
-        {ok, _} -> rebar_file_utils:cp_r(["README.md"], LibDir);
-        _ -> ok
-    end,
+    ok = maybe_copy_files(LibDir),
     %% write info file
     ok = file:write_file(InfoFile, jsx:encode(Info, [space, {indent, 4}])),
     %% copy apps to lib dir
@@ -135,11 +137,26 @@ do_make_tar(Cwd, NameWithVsn) ->
     Files = filelib:wildcard(NameWithVsn ++ "/**"),
     TarFile = NameWithVsn ++ ".tar.gz",
     FullName = filename:join([Cwd, TarFile]),
-    ?LOG(info, "creating ~ts", [FullName]),
+    ?LOG(info, "Trying create ~ts", [FullName]),
     ok = erl_tar:create(TarFile, Files, [compressed]),
     {ok, Bin} = file:read_file(TarFile),
     Sha = bin2hexstr(crypto:hash(sha256, Bin)),
     ok = file:write_file(NameWithVsn ++ ".sha256", Sha).
+
+maybe_copy_files(LibDir) ->
+    lists:foreach(
+        fun(F) ->
+            case file:read_file_info(F) of
+                {ok, _} -> rebar_file_utils:cp_r([F], LibDir);
+                _ -> ok
+            end
+        end,
+        [ ?plugin_readme_file
+        , ?plugin_avsc_file
+        , ?plugin_i18n_file
+        ]
+    ),
+    ok.
 
 bin(X) -> iolist_to_binary(X).
 
