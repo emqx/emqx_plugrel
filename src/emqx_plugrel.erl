@@ -1,9 +1,5 @@
 -module(emqx_plugrel).
 
--feature(maybe_expr, enable).
-
--include_lib("kernel/include/file.hrl").
-
 -export([init/1, do/1, format_error/1]).
 
 -define(METADATA_VSN, <<"0.1.0">>).
