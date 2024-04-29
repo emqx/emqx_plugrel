@@ -176,12 +176,12 @@ validate_file(F) ->
 validate_avsc(F) ->
     {ok, Bin} = file:read_file(F),
     try avro:decode_schema(Bin) of
-        _ -> 
-            ?LOG(debug, "avsc file valid: ~ts", [F]),
+        _ ->
+            ?LOG(debug, "Valid AVRO schema file: ~ts", [F]),
             true
     catch
-        _ : _ ->
-            ?LOG(error, "Trying validate avsc file failed.", []),
+        E : R : S ->
+            ?LOG(error, "Invalid AVRO schema file. Error = ~p, Reason = ~p, Stacktrace=~p", [E, R, S]),
             error({failed_to_validate_avsc_file, F})
     end.
 
@@ -189,11 +189,11 @@ validate_i18n(F) ->
     {ok, Bin} = file:read_file(F),
     try jsx:decode(Bin) of
         _ ->
-            ?LOG(debug, "i18n file valid: ~ts", [F]),
+            ?LOG(debug, "Valid i18n file: ~ts", [F]),
             true
     catch
-        _ : _ ->
-            ?LOG(error, "Trying validate i18n file failed.", []),
+        E : R : S ->
+            ?LOG(error, "Invalid i18n json file. Error = ~p, Reason = ~p, Stacktrace=~p", [E, R, S]),
             error({failed_to_validate_i18n_file, F})
     end.
 
