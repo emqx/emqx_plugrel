@@ -125,7 +125,7 @@ make_tar(#{name := Name, rel_vsn := Vsn, rel_apps := Apps} = Info, State) ->
     ok = filelib:ensure_dir(InfoFile),
     ok = maybe_copy_files(LibDir),
     %% write info file
-    ok = file:write_file(InfoFile, jsone:encode(Info, [{space, 1}, {indent, 4}])),
+    ok = file:write_file(InfoFile, jsone:encode(Info, [native_forward_slash, {space, 1}, {indent, 4}])),
     %% copy apps to lib dir
     Sources = lists:map(fun(App) -> filename:join([BaseDir, "rel", Name, "lib", App]) end, Apps),
     ok = rebar_file_utils:cp_r(Sources, LibDir),
