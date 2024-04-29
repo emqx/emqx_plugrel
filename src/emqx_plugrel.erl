@@ -1,5 +1,9 @@
 -module(emqx_plugrel).
 
+-feature(maybe_expr, enable).
+
+-include_lib("kernel/include/file.hrl").
+
 -export([init/1, do/1, format_error/1]).
 
 -define(METADATA_VSN, <<"0.1.0">>).
@@ -45,7 +49,7 @@ do(State) ->
     end,
     {ok, State}.
 
--spec format_error(any()) ->  iolist().
+-spec format_error(any()) -> iolist().
 format_error(Reason) ->
     io_lib:format("~p", [Reason]).
 
@@ -146,8 +150,11 @@ do_make_tar(Cwd, NameWithVsn) ->
 maybe_copy_files(LibDir) ->
     lists:foreach(
         fun(F) ->
-            case file:read_file_info(F) of
-                {ok, _} -> rebar_file_utils:cp_r([F], LibDir);
+            maybe
+                true ?= filelib:is_regular(F),
+                true ?= validate_file(F), %% validate only when file existed
+                rebar_file_utils:cp_r([F], LibDir)
+            else
                 _ -> ok
             end
         end,
@@ -157,6 +164,38 @@ maybe_copy_files(LibDir) ->
         ]
     ),
     ok.
+
+validate_file(?plugin_avsc_file = F) ->
+    validate_avsc(F);
+validate_file(?plugin_i18n_file = F) ->
+    validate_i18n(F);
+validate_file(F) ->
+    ?LOG(debug, "Skipping validate file ~ts", [F]),
+    true.
+
+validate_avsc(F) ->
+    {ok, Bin} = file:read_file(F),
+    try avro:decode_schema(Bin) of
+        _ -> 
+            ?LOG(debug, "avsc file valid: ~ts", [F]),
+            true
+    catch
+        _ : _ ->
+            ?LOG(error, "Trying validate avsc file failed.", []),
+            error({failed_to_validate_avsc_file, F})
+    end.
+
+validate_i18n(F) ->
+    {ok, Bin} = file:read_file(F),
+    try jsx:decode(Bin) of
+        _ ->
+            ?LOG(debug, "i18n file valid: ~ts", [F]),
+            true
+    catch
+        _ : _ ->
+            ?LOG(error, "Trying validate i18n file failed.", []),
+            error({failed_to_validate_i18n_file, F})
+    end.
 
 bin(X) -> iolist_to_binary(X).
 
