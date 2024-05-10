@@ -134,7 +134,7 @@ make_tar(#{name := Name, rel_vsn := Vsn, rel_apps := Apps} = Info, State) ->
     end.
 
 do_make_tar(Cwd, NameWithVsn) ->
-    Files = filelib:wildcard(NameWithVsn ++ "/**"),
+    Files = filelib:wildcard(NameWithVsn ++ "/*"),
     TarFile = NameWithVsn ++ ".tar.gz",
     FullName = filename:join([Cwd, TarFile]),
     ?LOG(info, "Trying create ~ts", [FullName]),
