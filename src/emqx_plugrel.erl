@@ -9,6 +9,9 @@
 -define(plugin_readme_file, "README.md").
 -define(plugin_avsc_file, "priv/config_schema.avsc").
 -define(plugin_i18n_file, "priv/config_i18n.json").
+-define(plugin_hocon_file, "priv/config.hocon").
+-define(validate_but_no_copy, undefined).
+
 
 -define(LOG(LEVEL, FORMAT, ARGS),
         rebar_api:LEVEL("[emqx_plugrel] " ++ FORMAT, ARGS)).
@@ -147,18 +150,21 @@ do_make_tar(Cwd, NameWithVsn) ->
 
 maybe_copy_files(LibDir) ->
     lists:foreach(
-        fun(F) ->
+        fun({F, TargetDir}) ->
             maybe
                 true ?= filelib:is_regular(F),
                 true ?= validate_file(F), %% validate only when file existed
-                rebar_file_utils:cp_r([F], LibDir)
+                case TargetDir of
+                    ?validate_but_no_copy -> ok;
+                    _ -> rebar_file_utils:cp_r([F], TargetDir), ok
+                end
             else
                 _ -> ok
             end
         end,
-        [ ?plugin_readme_file
-        , ?plugin_avsc_file
-        , ?plugin_i18n_file
+        [ {?plugin_readme_file, LibDir}
+        , {?plugin_avsc_file, ?validate_but_no_copy}
+        , {?plugin_i18n_file, ?validate_but_no_copy}
         ]
     ),
     ok.
@@ -172,14 +178,27 @@ validate_file(F) ->
     true.
 
 validate_avsc(F) ->
-    {ok, Bin} = file:read_file(F),
-    try avro:decode_schema(Bin) of
-        _ ->
-            ?LOG(debug, "Valid AVRO schema file: ~ts", [F]),
+    Name = <<"TryDecodeDefaultAvro">>,
+    try
+        begin
+            {ok, HoconMap} = hocon:load(?plugin_hocon_file),
+            JsonEncodedAvroBin = jsone:encode(HoconMap, [native_forward_slash, {space, 1}, {indent, 4}]),
+            Store0 = avro_schema_store:new([map]),
+            {ok, AvscBin} = file:read_file(?plugin_avsc_file),
+            Store = avro_schema_store:import_schema_json(Name, AvscBin, Store0),
+            Opts = avro:make_decoder_options([{map_type, map}, {record_type, map}, {encoding, avro_json}]),
+            {ok, avro_json_decoder:decode_value(JsonEncodedAvroBin, Name, Store, Opts)}
+        end
+
+    of
+        {ok, _Value} ->
+            ?LOG(debug, "Schema matched. Valid Plugin Hocon and Schema files: ~ts, ~ts", [?plugin_hocon_file, ?plugin_avsc_file]),
             true
     catch
         E : R : S ->
-            ?LOG(error, "Invalid AVRO schema file. Error = ~p, Reason = ~p, Stacktrace=~p", [E, R, S]),
+            ?LOG(error, "Invalid plugin Hocon or Schema. Please check ~ts and ~ts.~n"
+                        "Error = ~p, Reason = ~p, Stacktrace=~p",
+                        [?plugin_hocon_file, ?plugin_avsc_file, E, R, S]),
             error({failed_to_validate_avsc_file, F})
     end.
 
