@@ -1,20 +1,33 @@
-.rebar3
-_*
 .eunit
+deps
 *.o
 *.beam
 *.plt
-*.swp
-*.swo
-.erlang.cookie
-ebin
-log
 erl_crash.dump
+ebin
+rel/example_project
+.concrete/DEV_MODE
 .rebar
-logs
-_build
-.idea
-*.iml
-rebar3.crashdump
-*~
+.erlang.mk/
+data/
+emqx_plugin_template.d
+.DS_Store
+erlang.mk
+_build/
 rebar.lock
+test/ct.cover.spec
+.rebar3
+/.idea/
+rebar3.crashdump
+rebar3
+erlang_ls.config
+# VSCode files
+.vs/
+.vscode/
+# Emacs Backup files
+*~
+# Emacs temporary files
+.#*
+*#
+# For direnv
+.envrc
