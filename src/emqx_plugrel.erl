@@ -126,7 +126,7 @@ make_tar(#{name := Name, rel_vsn := Vsn, rel_apps := Apps} = Info, State) ->
     ok = filelib:ensure_dir(InfoFile),
     ok = maybe_copy_files(LibDir),
     %% write info file
-    ok = file:write_file(InfoFile, jsone:encode(Info, [native_forward_slash, {space, 1}, {indent, 4}])),
+    ok = file:write_file(InfoFile, jsone:encode(Info, [native_forward_slash, {space, 1}, {indent, 4}, native_utf8])),
     %% copy apps to lib dir
     Sources = lists:map(fun(App) -> filename:join([BaseDir, "rel", Name, "lib", App]) end, Apps),
     ok = rebar_file_utils:cp_r(Sources, LibDir),
@@ -214,15 +214,13 @@ validate_i18n(F) ->
             error({failed_to_validate_i18n_file, F})
     end.
 
-bin(X) -> iolist_to_binary(X).
+bin(X) -> unicode:characters_to_binary(X, utf8).
 
-str_list(L) -> lists:map(fun bin/1, L).
-
-info_field(authors, Authors) -> str_list(Authors);
-info_field(builder, Builder) -> info_map(Builder);
-info_field(functionality, Fs) -> str_list(Fs);
 info_field(compatibility, Cs) -> info_map(Cs);
-info_field(_, Value) -> bin(Value).
+info_field(builder, Builder) -> info_map(Builder);
+info_field(authors, Authors) -> bin(Authors);
+info_field(functionality, Fs) -> bin(Fs);
+info_field(_K, Value) -> bin(Value).
 
 info_map(InfoList) ->
     maps:from_list(lists:map(fun({K, V}) -> {K, info_field(K, V)} end, InfoList)).
