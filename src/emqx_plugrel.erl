@@ -4,7 +4,7 @@
 
 -export([init/1, do/1, format_error/1]).
 
--define(METADATA_VSN, <<"0.1.0">>).
+-define(METADATA_VSN, <<"0.5.1">>).
 
 -define(plugin_readme_file, "README.md").
 -define(plugin_avsc_file, "priv/config_schema.avsc").
