@@ -67,7 +67,7 @@ collect_info(PluginInfo, Name, Version, Apps, State) ->
                 , built_on_otp_release => bin(erlang:system_info(otp_release))
                 , with_config_schema => filelib:is_regular(?plugin_avsc_file)
                 , emqx_plugrel_vsn => ?PLUG_REL_TAG
-                , hidden => bin(maps:get(hidden, Info, false))
+                , hidden => maps:get(hidden, Info, false)
                 },
     maps:merge(Info, MoreInfo).
 
@@ -217,13 +217,13 @@ validate_i18n(F) ->
             error({failed_to_validate_i18n_file, F})
     end.
 
-bin(A) when is_atom(A) -> atom_to_binary(A, utf8);
 bin(X) -> unicode:characters_to_binary(X, utf8).
 
 info_field(compatibility, Cs) -> info_map(Cs);
 info_field(builder, Builder) -> info_map(Builder);
 info_field(authors, Authors) -> bin(Authors);
 info_field(functionality, Fs) -> bin(Fs);
+info_field(hidden, Bool) when is_boolean(Bool) -> Bool;
 info_field(_K, Value) -> bin(Value).
 
 info_map(InfoList) ->
