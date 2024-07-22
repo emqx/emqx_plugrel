@@ -65,6 +65,7 @@ collect_info(PluginInfo, Name, Version, Apps, State) ->
                 , metadata_vsn => ?METADATA_VSN
                 , built_on_otp_release => bin(erlang:system_info(otp_release))
                 , with_config_schema => filelib:is_regular(?plugin_avsc_file)
+                , hidden => bin(maps:get(hidden, Info, false))
                 },
     maps:merge(Info, MoreInfo).
 
@@ -214,6 +215,7 @@ validate_i18n(F) ->
             error({failed_to_validate_i18n_file, F})
     end.
 
+bin(A) when is_atom(A) -> atom_to_binary(A, utf8);
 bin(X) -> unicode:characters_to_binary(X, utf8).
 
 info_field(compatibility, Cs) -> info_map(Cs);
